@@ -21,27 +21,27 @@ for i in range(800): #We add 0.02i
 	c += 0.005j * i
 	for j in range(800): #We add 0.02
 		c += 0.005
-		z = 0
+		z = 0.25
 		
 		#print i, j
 		
 		for k in range(100):
-			z = z**2 + c
+			c = c**2 + z
 			
-			if ((z.real > 100 or z.imag > 100) and k < 10):
+			if ((c.real > 100 or c.imag > 100) and k < 10):
 				pixelArray[i][j] = 1000
 				break;
 			
-			if ((z.real > 100 or z.imag > 100) and k < 30 and k > 10):
+			if ((c.real > 100 or c.imag > 100) and k < 30 and k > 10):
 				pixelArray[i][j] = 1
 				break;
-			elif (((z.real > 100 or z.imag > 100) and k < 50 and k > 30)):
+			elif (((c.real > 100 or c.imag > 100) and k < 50 and k > 30)):
 				pixelArray[i][j] = 2
 				break;
-			elif (((z.real > 100 or z.imag > 100) and k < 70 and k > 50)):
+			elif (((c.real > 100 or c.imag > 100) and k < 70 and k > 50)):
 				pixelArray[i][j] = 3
 				break;
-			elif (((z.real > 100 or z.imag > 100) and k <= 100 and k > 70)):
+			elif (((c.real > 100 or c.imag > 100) and k <= 100 and k > 70)):
 				pixelArray[i][j] = 4
 				break;
 
