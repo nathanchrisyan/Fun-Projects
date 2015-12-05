@@ -1,40 +1,18 @@
 import math
 import pygame
 import pp
-import time
 from pygame.locals import*
+import time
 
 WIDTH = 800 #If we are going at the interval of -2 to 2, there will be 4 numbers, so 800/4 = 200, 4/200 = 1/50 = 0.005, so the values will be at increments of 0.02 
 HEIGHT = 800
 screensize = (WIDTH, HEIGHT)
 screen = pygame.display.set_mode(screensize)
+iterations = 150
 
 ppservers = ()
-
-job_server = pp.Server(ppservers = ppservers)
-print job_server.get_ncpus()
-
-pixelArray = [[], [], [], []]
-
-def init(pixels):
-	for k in range(4):
-		temptempArray = []
-		for i in range(800):
-			tempArray = []
-			for j in range(200):
-				tempArray.append(0)
-			temptempArray.append(tempArray)	
-		pixels[k] = (temptempArray)
-	return pixels
-
-job1 = job_server.submit(init, (pixelArray,))
-#print job1()
-pixelArray = job1()
-print len(pixelArray)
-print len(pixelArray[0]), "len 1"
-print len(pixelArray[0][0])
-#print pixelArray
-
+job_server = pp.Server(8, ppservers=ppservers)
+print "Starting pp with", job_server.get_ncpus(), "workers"
 def clamp(var, min, max):
 	if var > max:
 		var = max
@@ -42,32 +20,69 @@ def clamp(var, min, max):
 		var = min
 	return var
 
-#c = -1.3j - 2.5
-#z = -1.5 - 1.2j
+numArray = 4
+pixelArray1 = []
+pixelArray2 = []
+pixelArray3 = []
+pixelArray4 = []
 
-def calculateFractal(pixels, pixelMember ,dimension1, dimension2, iterations, startPos, juliaStartPos):
+def init(pixels, HEIGHT, WIDTH, numArray):
+	for i in range(WIDTH/int(math.sqrt(numArray))):
+		tempArray = []
+		for j in range(HEIGHT/int(math.sqrt(numArray))):
+			tempArray.append(0)
+		pixels.append(tempArray)
+	return pixels
+
+job1 = job_server.submit(init, (pixelArray1, HEIGHT, WIDTH, numArray), (), ("math",))
+job2 = job_server.submit(init, (pixelArray2, HEIGHT, WIDTH, numArray), (), ("math",))
+job3 = job_server.submit(init, (pixelArray3, HEIGHT, WIDTH, numArray), (), ("math",))
+job4 = job_server.submit(init, (pixelArray4, HEIGHT, WIDTH, numArray), (), ("math",))
+
+#print job1(), "steamed memes"
+
+pixelArray1 = job1()
+
+pixelArray2 = job2()
+pixelArray3 = job3()
+pixelArray4 = job4()
+
+#startPos = -1.3j - 2.5
+#juliaStartPos = -1.5 - 1.2j
+
+def calculateFractal(pixels, arraySplitMemberX, arraySplitMemberY, dimension1, dimension2, iterations, startPos, juliaStartPos): 
+	#To use parallel computing, split the pixelArray into four parts, and then perform the function on the individual array parts. Then concentate them together
+
 	juliax = dimension1[0]
 	juliay = dimension1[1]
 	x = dimension2[0]
 	y = dimension2[1]
+	c = startPos
+	z = juliaStartPos 
+	
 	counter1 = -1
 	counter2 = -1
 
-	for i in range(juliay): #We add 0.02i
-		counter2 = x * i - 1
+	for i in range(juliay * arraySplitMemberY, juliay * (arraySplitMemberY + 1)): #We add 0.02i
+		counter2 = y * (i - juliay * arraySplitMemberY) - 1
 		counter1 = -1
 
-		for j in range(juliax): #We add 0.02
+		#z = -3 - 2j
+		#z += 0.005j * i
+		#print z, "mankus"
+		for j in range(juliax * arraySplitMemberX, juliax * (arraySplitMemberX + 1)): #We add 0.02
 			c = startPos
 			c += 0.1j * j
 			c += 0.1 * i
-			counter2 = x * i - 1
+			counter2 = y * (i - juliay * arraySplitMemberY) - 1 
+			#counter1 = 40 * j
+			#counter2 = 40 * i
 			for k in range(y):
 				counter2 += 1
-				counter1 = y * j - 1
+				counter1 = x * (j- juliax * arraySplitMemberX) - 1 
 			
 				for n in range(x):
-					z = juliaStartPos
+					z = juliaStartPos 
 					z += 0.15j * n
 					z += 0.15 * k
 					counter1 += 1
@@ -75,38 +90,47 @@ def calculateFractal(pixels, pixelMember ,dimension1, dimension2, iterations, st
 					for p in range(iterations):
 						z = z**2 + c	
 
-						if (z.real > 20000 or z.imag > 20000):
-							#print pixelMember, "pixelMember"
-							#print counter1, "counter1"
-							#print counter2, "counter2"
-							pixels[pixelMember][counter1][counter2] = clamp(p * 10, 0, 255)
+						if (z.real > 2000 or z.imag > 2000):
+							#print  counter1, counter2
+							pixels[counter1][counter2] = clamp(p * 10, 0, 255)
 							break;
 	return pixels
 
-def display(pixels):
-	for k in range(len(pixels)):
-		for i in range(len(pixels[0])):
-			for j in range(len(pixels[0][0])):
-				#print counter, j
-				pygame.draw.circle(screen, (pixels[k][i][j]/2, pixels[k][i][j]/2, clamp(pixels[k][i][j] + 20, 0, 255)), (j, i + k * 200), 1, 1)
-			
-
 #print pixelArray
 
-calculateFractal(pixelArray, 0, [32, 8], [25, 25], 150, -1.3j - 2.5, -1.5 - 1.2j)
-job1 = job_server.submit(calculateFractal, (pixelArray,0, [32, 8], [25, 25], 150, -1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
-job2 = job_server.submit(calculateFractal, (pixelArray,1,  [32, 8], [25, 25], 150, -1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
-job3 = job_server.submit(calculateFractal, (pixelArray,2, [32, 8], [25, 25], 150, -1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
-job4 = job_server.submit(calculateFractal, (pixelArray,3, [32, 8], [25, 25], 150, -1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
+#pixelArray1 = calculateFractal(pixelArray1, 0, 0, [20, 20], [20, 20], 150, -1.3j - 2.5, -1.5 - 1.2j) 
+#pixelArray2 = calculateFractal(pixelArray2, 0, 1, [20, 20], [20, 20], 150, -1.3j - 2.5, -1.5 - 1.2j) 
+#pixelArray3 = calculateFractal(pixelArray3, 1, 0, [20, 20], [20, 20], 150, -1.3j - 2.5, -1.5 - 1.2j) 
+#pixelArray4 = calculateFractal(pixelArray4, 1, 1, [20, 20], [20, 20], 150, -1.3j - 2.5, -1.5 - 1.2j) 
+#print "time elapsed", time.time() - starttime, "s"
+job1 = job_server.submit(calculateFractal, (pixelArray1, 0, 0,[20, 20], [20, 20], 150,-1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
+job2 = job_server.submit(calculateFractal, (pixelArray2, 0, 1,[20, 20], [20, 20], 150,-1.3j - 2.5, -1.5 - 1.2j,), (clamp,))
+job3 = job_server.submit(calculateFractal, (pixelArray3, 1, 0,[20, 20], [20, 20], 150,-1.3j - 2.5, -1.5 - 1.2j,), (clamp,))	
+job4 = job_server.submit(calculateFractal, (pixelArray4, 1, 1,[20, 20], [20, 20], 150,-1.3j - 2.5, -1.5 - 1.2j,), (clamp,))	
 
-pixelArray = job1()
-pixelArray = job2()
-pixelArray = job3()
-pixelArray = job4()
+starttime = time.time()
+pixelArray1 = job1()
+pixelArray2 = job2()
+pixelArray3 = job3()
+pixelArray4 = job4()
+print "time elapsed", time.time() - starttime, "s"
 
 screen.fill((255, 255, 255))
 
-display(pixelArray)
+def Display(pixels, arraySplitMemberX = 0, arraySplitMemberY = 0):
+	counter1 = -1
+	counter2 = -1
+	for i in range(len(pixels) * arraySplitMemberY, len(pixels) * (arraySplitMemberY + 1)):
+		counter1 += 1
+		counter2 = -1
+		for j in range(len(pixels[0]) * arraySplitMemberX, len(pixels[0]) * (arraySplitMemberX + 1)):
+			counter2 += 1
+			pygame.draw.circle(screen, (pixels[counter1][counter2]/2, pixels[counter1][counter2]/2, clamp(pixels[counter1][counter2] + 20, 0, 255)), (-j + WIDTH, i), 1, 1)       
+
+Display(pixelArray1, 0, 0)
+Display(pixelArray2, 1, 0)
+Display(pixelArray3, 0, 1)
+Display(pixelArray4, 1, 1)
 
 counter = 0
 cont = True 
