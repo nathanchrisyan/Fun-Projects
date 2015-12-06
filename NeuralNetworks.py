@@ -1,7 +1,5 @@
 #Evolutionary Simulation of Neural Networks
 
-#6041952301391873
-
 #IDEA: Possible that offspring are receiving the same inputs as their parent 
 
 import math
@@ -12,9 +10,9 @@ BACKGROUND = (255, 255, 255)
 (SCREENBOUNDX, SCREENBOUNDY) = (1300, 800)
 screen = pygame.display.set_mode((SCREENBOUNDX, SCREENBOUNDY))
 
-pygame.font.init()
+#pygame.font.init()
 
-myfont = pygame.font.SysFont("Comic Sans MS", 13)
+#myfont = pygame.font.SysFont("Comic Sans MS", 13)
 
 
 Food = []
@@ -157,10 +155,12 @@ def PushChromosome(Chromosome, Agent):
 	Hidden = []
 	#print Agent.WeightsIH, "hello"
 	for i in range(len(Agent.WeightsIH)):
-	
+		print i, "i"
+		print len(Chromosome)
 		Hidden.append(Chromosome[i])
 	Output = []
 	for j in range(len(Agent.WeightsHO), len(Chromosome)):
+		print j, "j"
 		Output.append(Chromosome[j])
 	Agent.WeightsIH = Hidden
 	Agent.WeightsHO = Output
@@ -175,10 +175,12 @@ def FindBestFitness(Agents):
 	return Index
 
 def Mutate(Chromosome, MutationRate):
+	print Chromosome, "chromosome"
 	for i in range(len(Chromosome)):
 		Mutate = random.random()
 		if Mutate < MutationRate:
 			Chromosome[i] += random.uniform(-1, 1) * random.random()
+
 	return Chromosome
 
 	
@@ -217,53 +219,66 @@ while Running:
 	
 	#Neural network computations
 	Spawn += 1
+	if len(Food) <= 0:
+		for i in range(5):
+			AddFood()
+	if Spawn % 100 == 0:
+		AddFood()
 	if Spawn % 1999 == 0:
 		Best = FindBestFitness(Agents)
 		Reproduction(Agents[Best])
 		Reproduction(Agents[Best])
 	if Spawn % 2000 == 0:
-		for i in range(5):
+		for i in range(1):
 			Mum = Agents[Roulette(TotalFitness, Agents)] #Both names said in a British accent
+			print len(Mum.WeightsIH)
 			Dad = Agents[Roulette(TotalFitness, Agents)]
 			
 			#while Dad == Mum:
 			#	Dad = Agents[Roulette(TotalFitness, Agents)]
 			
 			Mum2 = Chromosome(Mum.WeightsIH, Mum.WeightsHO)
+			print len(Mum.WeightsIH), len(Mum.WeightsHO), "dankusm memes"
 			Dad2 = Chromosome(Dad.WeightsIH, Dad.WeightsHO)
 			
 			#crossover
 			child1 = []
 			child2 = []
+			print Mum2, "mum"
 			for p in range(len(Mum2)):
 				child1.append(0)
 				child2.append(0)
 			
-			Agents.append(Agent([0,0,0,0,0], [0,0,0], [0,0,0], random.randint(0, SCREENBOUNDX), random.randint(0, SCREENBOUNDY) ,[], [], 4000, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))))
-			Agents[len(Agents) - 1].createNeuralNetwork()
+			print len(child1), "child12"
 			
 			Agents.append(Agent([0,0,0,0,0], [0,0,0], [0,0,0], random.randint(0, SCREENBOUNDX), random.randint(0, SCREENBOUNDY) ,[], [], 4000, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))))
 			Agents[len(Agents) - 1].createNeuralNetwork()
 			
+			Agents.append(Agent([0,0,0,0,0], [0,0,0], [0,0,0], random.randint(0, SCREENBOUNDX), random.randint(0, SCREENBOUNDY) ,[], [], 4000, (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))))
+			Agents[len(Agents) - 1].createNeuralNetwork()
 			
-			CrossoverPoint = random.randint(0, len(Mum2))
+			
+			CrossoverPoint = random.randint(0, 24)
 			for k in range(CrossoverPoint):
 				child1[k] = Mum2[k]
 				child2[k] = Dad2[k]
-			for j in range(CrossoverPoint, len(Mum2)):
-				
+			for j in range(CrossoverPoint, 24):
+				print len(Dad2), "dad"
+				print len(child1)
 				child1[j] = Dad2[j]
 				child2[j] = Mum2[j]
 			
-			child1 = Mutate(child1, 0.1)
-			child2 = Mutate(child2, 0.1)
+			child1 = Mutate(child1, 0.1), "child1"
+			child2 = Mutate(child2, 0.1), "child2"
 			
-			PushChromosome(child1, Agents[len(Agents) - 1])
-			PushChromosome(child2, Agents[len(Agents) - 2])
+			print child1[0], "dank memes"
+			
+			PushChromosome(child1[0], Agents[len(Agents) - 1])
+			PushChromosome(child2[0], Agents[len(Agents) - 2])
 			
 		print TotalFitness/len(Agents), "Average Fitness"
-		for i in range(12):
-			del Agents[0]
+		#for i in range(12):
+		#	del Agents[0]
 			
 	TotalFitness = 0
 	for i in range(len(Agents)):
@@ -318,14 +333,15 @@ while Running:
 		for k in range (len(Food)):
 			if CalcDistance([Agents[i].posx, Agents[i].posy], Food[k]) < 13:
 				FoodToDelete.append(k)
-				AddFood()
 				Agents[i].Health += 1000
 				Agents[i].FoodColl += 1
 				Agents[i].fitness = Agents[i].FoodColl * 100
 		for i in range (len(FoodToDelete)):
 			del Food[FoodToDelete[i] - i]
 	
-	
+		if len(Agents) == 0:
+			for i in range(5):
+				Add()
 		if Agents[i].posx > SCREENBOUNDX:
 			Agents[i].posx = 0
 		
@@ -401,7 +417,7 @@ while Running:
 				pygame.draw.circle(screen, (0,0,255), (int(Agents[i].posx/1), int(Agents[i].posy/1)), 8, 1)
 				pygame.draw.circle(screen, (Agents[i].Color), (int(Agents[i].posx/1), int(Agents[i].posy/1)), 7)
 		
-		Agents[i].Health -= 0
+		Agents[i].Health -= 5
 		
 		if Agents[i].Ticks > 2000:
 			Agents[i].Ticks = 0
@@ -419,6 +435,7 @@ while Running:
 			AgentsToDelete.append(i)
 			
 			
+			
 	for i in range(len(AgentsToDelete)):
 		del Agents[AgentsToDelete[i] - i]
 		
@@ -429,5 +446,3 @@ while Running:
 	for i in range(WhenToUpdate):
 		if Update:
 			pygame.display.flip()
-		
-	
